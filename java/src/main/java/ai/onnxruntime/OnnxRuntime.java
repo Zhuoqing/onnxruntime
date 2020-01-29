@@ -9,6 +9,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
@@ -91,6 +93,7 @@ final class OnnxRuntime {
                             }
                             System.load(tempLibraryPath);
                         } catch (Exception e) {
+							logger.info("Failed load resource " + e.getMessage());
                             if (debug) {
                                 logger.info("Failed to load from testing location, looking for /lib/<library-name>");
                             }
@@ -141,14 +144,14 @@ final class OnnxRuntime {
             }
 
             if (filename != null && prefix.length() >= 3) {
-                File temp = File.createTempFile(prefix, suffix);
+				Path tmpDir = Files.createTempDirectory(prefix);
+                File temp = new File(tmpDir.resolve(filename).toAbsolutePath().toString());
                 if (debugLogging) {
                     logger.info("Writing " + path + " out to " + temp.getAbsolutePath());
                 }
                 temp.deleteOnExit();
-                if (!temp.exists()) {
-                    throw new FileNotFoundException("File " + temp.getAbsolutePath() + " does not exist.");
-                } else {
+                tmpDir.toFile().deleteOnExit();
+                {
                     byte[] buffer = new byte[1024];
                     try (InputStream is = OnnxRuntime.class.getResourceAsStream(path)) {
                         if (is == null) {
